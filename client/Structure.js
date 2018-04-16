@@ -1,3 +1,6 @@
+const Interruptable = require('../utils/Interruptable.js');
+const performance = require('perf_hooks').performance;
+
 class Structure {
 
   constructor(options = {}) {
@@ -9,7 +12,7 @@ class Structure {
     this.name = options.name;
 
     /**
-     * The level of the structure, starts at 0 if no structure is bought
+     * The level of the structure, starts at 0 (no structure is bought)
      * @type {Number}
      */
     this.level = 0;
@@ -45,24 +48,15 @@ class Structure {
     this.balance = options.balance || 0;
 
     /**
-     * The delay in seconds between earning money whilest in manual mode
+     * The delay in milliseconds for this structure
      * @type {Number}
      */
     this.delay = options.delay;
 
-    /**
-     * Enable manual mode when creating the structure
+    /*
+     * Enable timer
      */
-    if (options.manual) {
-      this.enableManual();
-    }
-
-    /**
-     * Wether or not the structure is manual
-     * @type {Boolean}
-     * @readonly
-     */
-    this.isManual = false;
+    this.tick();
 
   }
 
@@ -80,7 +74,7 @@ class Structure {
    * Adds levels to the structure, and increases its money/s
    * @param {Number} money The amount of money the user has
    * @param {Number} [amount=1] The amount of levels to add
-   * @return {?Number} The amount of money the user has left
+   * @returns {?Number} The amount of money the user has left
    */
   addLevel(money, amount = 1) {
     let newLevel = this.level;
@@ -99,7 +93,7 @@ class Structure {
   /**
    * The cost to buy 1 or more structures
    * @param {Number} [amount=1] The amount of levels to check
-   * @return {Number} The amount it would cost
+   * @returns {Number} The amount it would cost
    */
   upgradeCost(amount = 1) {
     let newLevel = this.level;
@@ -112,10 +106,51 @@ class Structure {
   /**
    * Gets the money that would've been earned in the time provided
    * @param {Number} seconds The amount of seconds to calculate for
-   * @return {Number} The amount of money earned in the seconds provided
+   * @returns {Number} The amount of money earned in the seconds provided
    */
   getMoneyFor(seconds) {
     return this.MPS * seconds;
+  }
+
+  /**
+   * Delayed task for the structure to earn money
+   * @param {Number} [delay=this.delay] The delay for the timer
+   * @private
+   */
+  async tick(delay = this.delay) {
+    this.interruptable = new Interruptable();
+    this.start = performance.now();
+    try {
+      await this.interruptable.sleep(delay);
+    } catch (e) {
+      if (e === 1) {
+        if (performance.now() - this.start < delay) {
+          const percentage = 1 - (delay - this.delay) / delay;
+          const remaining = this.timeRemaining * percentage;
+          if (remaining > 0) return this.tick(remaining);
+        }
+      }
+    }
+    this.balance += this.getMoneyFor(this.delay / 1000);
+    this.tick();
+  }
+
+  /**
+   * Get the time remaining for the current cycle of the structure
+   * @returns {Number} Time remaining
+   */
+  get timeRemaining() {
+    return this.delay - Math.round(performance.now() - this.start);
+  }
+
+  /**
+   * Set a new delay for the structure
+   * This will update the current timer
+   * @param {Number} delay The new delay
+   */
+  setDelay(delay) {
+    this.delay = delay;
+    this.interruptable.cancel();
   }
 
   /**
@@ -125,31 +160,6 @@ class Structure {
     this.level = 0;
     this.MPS = 0;
     this.balance = 0;
-  }
-
-  /**
-   * Enables the manual mode for the structure
-   */
-  enableManual() {
-    if (this.isManual) return;
-    this.timeout;
-  }
-  get timeout() {
-    const delay = this.delay;
-    setTimeout(() => {
-      this.balance += this.getMoneyFor(delay);
-      this.timeout;
-    }, delay * 1000);
-  }
-
-  /**
-   * Collects the money stored in the structure and sets its balance to 0
-   * @return {Number} The money stored in the structure
-   */
-  collect() {
-    const balance = this.balance;
-    this.balance = 0;
-    return balance;
   }
 
 }
