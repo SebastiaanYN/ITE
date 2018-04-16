@@ -1,14 +1,8 @@
-const EventEmitter = require('events');
 const Structure = require('./Structure.js');
 
-/**
- * The client for the tycoon game
- * @extends {EventEmitter}
- */
-class Client extends EventEmitter {
+class Client {
 
   constructor(options = {}) {
-    super();
 
     /**
      * All structure instances
@@ -32,44 +26,14 @@ class Client extends EventEmitter {
      * Formula for how much you earn more per prestige
      * @type {Function}
      */
-    this.prestigeBoost = options.prestigeBoost || (x => x * 1);
+    this.prestigeBoost = options.prestigeBoost || (x => 1);
 
-    /**
-     * Indicates wether or not the client is manual or not
-     * If manual moneyEarned event will not be fired and structures will hold their own money
-     * @type {Boolean}
-     */
-    this.manual = options.manual || false;
-
-    if (!this.manual) {
-      /**
-       * An interval to call the moneyEarned event and give the money
-       * Only active if the client is not on manual
-       * @event Client#moneyEarned
-       * @type {Number}
-       */
-      setInterval(() => this.emit('moneyEarned', this.MPS), options.moneyEarnedInterval || 1000);
-    }
-
-  }
-
-  /**
-   * Gets the amount of money the user should get per second
-   * @type {Number}
-   * @readonly
-   */
-  get MPS() {
-    let amount = 0;
-    for (const structure of this.structures) {
-      amount += structure.MPS;
-    }
-    if (this.prestige) amount *= this.prestigeBoost(this.prestigeLevel);
-    return amount;
   }
 
   /**
    * Creates a new structre with a set of options
    * @param {StructureOptions} options Options for the structure
+   * @returns {Structure} The structure that was created
    */
   createStructure(options = {}) {
     const structure = new Structure(options);
@@ -78,11 +42,24 @@ class Client extends EventEmitter {
   }
 
   /**
+   * Gets the amount of money the user should get per second
+   * @returns {Number} The money the person should get per second
+   */
+  get MPS() {
+    let amount = 0;
+    for (const structure of this.StructureManager.structures) {
+      amount += structure.MPS;
+    }
+    if (this.prestige) amount *= this.prestigeBoost(this.prestigeLevel);
+    return amount;
+  }
+
+  /**
    * Resets all the structures and increments the prestigeLevel
    */
   prestige() {
     this.prestigeLevel++;
-    for (const structure of this.structures) {
+    for (const structure of this.StructureManager.structures) {
       structure.reset();
     }
   }
