@@ -42,12 +42,24 @@ class Client {
   }
 
   /**
+   * Collects the money stored in all structures
+   * @returns {Number} Money
+   */
+  collectAll() {
+    let balance = 0;
+    for (const structure of this.structures) {
+      balance += structure.collect();
+    }
+    return balance;
+  }
+
+  /**
    * Gets the amount of money the user should get per second
    * @returns {Number} The money the person should get per second
    */
   get MPS() {
     let amount = 0;
-    for (const structure of this.StructureManager.structures) {
+    for (const structure of this.structures) {
       amount += structure.MPS;
     }
     if (this.prestige) amount *= this.prestigeBoost(this.prestigeLevel);
