@@ -59,7 +59,7 @@ class Client {
    */
   prestige() {
     this.prestigeLevel++;
-    for (const structure of this.StructureManager.structures) {
+    for (const structure of this.structures) {
       structure.reset();
     }
   }
