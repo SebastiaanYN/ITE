@@ -104,6 +104,14 @@ class Structure {
   }
 
   /**
+   * The amount of money the structure generates per cycle
+   * @returns {Number} The amount of money
+   */
+  get MPC() {
+    return this.MPS * this.delay / 1000;
+  }
+
+  /**
    * Gets the money that would've been earned in the time provided
    * @param {Number} seconds The amount of seconds to calculate for
    * @returns {Number} The amount of money earned in the seconds provided
@@ -115,11 +123,12 @@ class Structure {
   /**
    * Delayed task for the structure to earn money
    * @param {Number} [delay=this.delay] The delay for the timer
+   * @param {Boolean} [newLoop=true] Whether or not the loop is new, or changed
    * @private
    */
-  async tick(delay = this.delay) {
+  async tick(delay = this.delay, newLoop = true) {
     this.interruptable = new Interruptable();
-    this.start = performance.now();
+    if (newLoop) this.start = performance.now();
     try {
       await this.interruptable.sleep(delay);
     } catch (e) {
@@ -127,7 +136,7 @@ class Structure {
         if (performance.now() - this.start < delay) {
           const percentage = 1 - (delay - this.delay) / delay;
           const remaining = this.timeRemaining * percentage;
-          if (remaining > 0) return this.tick(remaining);
+          if (remaining > 0) return this.tick(remaining, false);
         }
       }
     }
@@ -151,6 +160,16 @@ class Structure {
   setDelay(delay) {
     this.delay = delay;
     this.interruptable.cancel();
+  }
+
+  /**
+   * Collects all money stored in this structure
+   * @returns {Number} Money
+   */
+  collect() {
+    const balance = this.balance;
+    this.balance = 0;
+    return balance;
   }
 
   /**
