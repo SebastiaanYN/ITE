@@ -86,22 +86,11 @@ class Util {
     const max = 9.99999 * Math.pow(10, (suffixes.length * 3 + 2));
     if (num > max) throw new RangeError('Number too big! Make sure it is not bigger as ' + max);
 
-    const size = this.toFixed(Math.floor(num)).length;
+    const size = Math.floor(Math.log10(num)) + 1;
     const exponent = size % 3 === 0 ? size - 3 : size - (size % 3);
     const short = Math.round(Math.pow(10, decimals) * (num / Math.pow(10, exponent))) / Math.pow(10, decimals);
     const suffix = ' ' + suffixes[exponent / 3 - 1];
     return prefix + short + suffix;
-  }
-
-  /**
-   * Turn a number with scientific notation into a full number
-   * @param {Number} num The number to change
-   * @returns {String} The new number
-   */
-  static toFixed(num) {
-    let str = num.toFixed(0);
-    if (!str.match(/e\+[0-9]+$/)) return str;
-    return str.replace('.', '').split('e+').reduce((p, b) => p + '0'.repeat(b - p.length + 1));
   }
 
 }
