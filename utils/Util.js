@@ -1,70 +1,4 @@
-/**
- * A list of suffixes to display amounts of money
- * @type {Array} The array with suffixes
- */
-const suffixes = [
-  'Thousand',
-  'Million',
-  'Billion',
-  'Trillion',
-  'Quadrillion',
-  'Quintillion',
-  'Sextillion',
-  'Septillion',
-  'Octillion',
-  'Nonillion',
-  'Decillion',
-  'Undecillion',
-  'Duodecillion',
-  'Tredecillion',
-  'Quattuordecillion',
-  'Quindecillion',
-  'Sexdecillion',
-  'Septendecillion',
-  'Octodecillion',
-  'Novendecillion',
-  'Vigintillion',
-  'Unvigintillion',
-  'Duovigintillion',
-  'Trevigintillion',
-  'Quattuorvigintillion',
-  'Quinquadvigintillion',
-  'Sesvigintillion',
-  'Septemvigintillion',
-  'Octovigintillion',
-  'Novemvigintillion',
-  'Trigintillion',
-  'Untrigintillion',
-  'Duotrigintillion',
-  'Trestrigintillion',
-  'Quattuortrigintillion',
-  'Quinquatrigintillion',
-  'Sestrigintillion',
-  'Septentrigintillion',
-  'Octotrigintillion',
-  'Noventrigintillion',
-  'Quadragintillion',
-  'Unquadragintillion',
-  'Duoquadragintillion',
-  'Trequadragintillion',
-  'Quattuorquadragintillion',
-  'Quinquadragintillion',
-  'Sexquadragintillion',
-  'Septenquadragintillion',
-  'Octaquadragintillion',
-  'Novemquadragintillion',
-  'Quinquagintillion',
-  'Unquinquagintillion',
-  'Duoquinquagintillion',
-  'Trequinquagintillion',
-  'Quattuorquinquagintillion',
-  'Quinquinquagintillion',
-  'Sexquinquagintillion',
-  'Septenquinquagintillion',
-  'Octaquinquagintillion',
-  'Novemquinquagintillion',
-  'Sexagintillion'
-];
+const Constants = require('./Constants.js');
 
 class Util {
 
@@ -83,13 +17,13 @@ class Util {
     const prefix = number < 0 ? '-' : '';
     const num = Math.abs(number);
 
-    const max = 9.99999 * Math.pow(10, (suffixes.length * 3 + 2));
+    const max = 9.99999 * Math.pow(10, (Constants.valueNames.length * 3 + 2));
     if (num > max) throw new RangeError('Number too big! Make sure it is not bigger as ' + max);
 
     const size = Math.floor(Math.log10(num)) + 1;
     const exponent = size % 3 === 0 ? size - 3 : size - (size % 3);
     const short = Math.round(Math.pow(10, decimals) * (num / Math.pow(10, exponent))) / Math.pow(10, decimals);
-    const suffix = ' ' + suffixes[exponent / 3 - 1];
+    const suffix = ' ' + Constants.valueNames[exponent / 3 - 1];
     return prefix + short + suffix;
   }
 

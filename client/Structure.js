@@ -1,15 +1,19 @@
 const Interruptable = require('../utils/Interruptable.js');
+const Options = require('../utils/Constants.js').DefaultStructureOptions;
 const performance = require('perf_hooks').performance;
 
 class Structure {
 
+  /**
+   * @param {StructureOptions} [options] Options for the structure
+   */
   constructor(options = {}) {
 
     /**
      * The name for the structure
      * @type {String}
      */
-    this.name = options.name;
+    this.name = options.name || Options.name;
 
     /**
      * The level of the structure, starts at 0 (no structure is bought)
@@ -19,21 +23,21 @@ class Structure {
 
     /**
      * The max level for the structure
-     * @type {Number}
+     * @type {?Number}
      */
-    this.maxLevel = options.maxLevel;
+    this.maxLevel = options.maxLevel || Options.maxLevel;
 
     /**
      * The amount of money/s that the structure generates calculated by level
      * @type {Function}
      */
-    this.calcMPS = options.calcMPS;
+    this.calcMPS = options.calcMPS || Options.calcMPS;
 
     /**
      * The amount it costs to upgrade the structure
      * @type {Function}
      */
-    this.calcCost = options.calcCost;
+    this.calcCost = options.calcCost || Options.calcCost;
 
     /**
      * The amount of money/s that structure generates
@@ -45,18 +49,26 @@ class Structure {
      * The balance the structure has
      * @type {Number}
      */
-    this.balance = options.balance || 0;
+    this.balance = options.balance || Options.balance;
 
     /**
      * The delay in milliseconds for this structure
      * @type {Number}
      */
-    this.delay = options.delay;
+    this.delay = options.delay || Options.delay;
 
-    /*
-     * Enable timer
+    /**
+     * Whether or not the structure is automated or not
+     * @type {Boolean}
      */
-    this.tick();
+    this.automated = options.automated || Options.automated;
+
+    if (this.automated) {
+      /*
+       * Enable timer
+       */
+      this.startTimer();
+    }
 
   }
 
@@ -65,7 +77,7 @@ class Structure {
    * @param {Number} level The level to set the structure to
    */
   setLevel(level) {
-    if (level > this.maxLevel) this.level = this.maxLevel;
+    if (this.maxLevel && level > this.maxLevel) this.level = this.maxLevel;
     else this.level = level;
     this.MPS = this.calcMPS(level);
   }
@@ -76,11 +88,14 @@ class Structure {
    * @param {Number} [amount=1] The amount of levels to add
    * @returns {?Number} The amount of money the user has left
    */
-  addLevel(money, amount = 1) {
+  buy(money, amount = 1) {
     let newLevel = this.level;
-    if (this.level === this.maxLevel) return null;
-    else if (this.level + amount >= this.maxLevel) newLevel = this.maxLevel;
-    else newLevel += amount;
+    if (!this.maxLevel) newLevel += amount;
+    else {
+      if (this.level === this.maxLevel) return null;
+      else if (this.level + amount >= this.maxLevel) newLevel = this.maxLevel;
+      else newLevel += amount;
+    }
 
     const cost = this.calcCost(newLevel) - this.calcCost(this.level);
     if (cost > money) return null;
@@ -95,11 +110,14 @@ class Structure {
    * @param {Number} [amount=1] The amount of levels to check
    * @returns {Number} The amount it would cost
    */
-  upgradeCost(amount = 1) {
+  cost(amount = 1) {
     let newLevel = this.level;
-    if (this.level === this.maxLevel) return 0;
-    else if (this.level + amount >= this.maxLevel) newLevel = this.maxLevel;
-    else newLevel += amount;
+    if (!this.maxLevel) newLevel += amount;
+    else {
+      if (this.level === this.maxLevel) return 0;
+      else if (this.level + amount >= this.maxLevel) newLevel = this.maxLevel;
+      else newLevel += amount;
+    }
     return this.calcCost(newLevel) - this.calcCost(this.level);
   }
 
@@ -121,12 +139,11 @@ class Structure {
   }
 
   /**
-   * Delayed task for the structure to earn money
+   * Timer that generates money for the structure
    * @param {Number} [delay=this.delay] The delay for the timer
    * @param {Boolean} [newLoop=true] Whether or not the loop is new, or changed
-   * @private
    */
-  async tick(delay = this.delay, newLoop = true) {
+  async startTimer(delay = this.delay, newLoop = true) {
     this.interruptable = new Interruptable();
     if (newLoop) this.start = performance.now();
     try {
@@ -136,20 +153,22 @@ class Structure {
         if (performance.now() - this.start < delay) {
           const percentage = 1 - (delay - this.delay) / delay;
           const remaining = this.timeRemaining * percentage;
-          if (remaining > 0) return this.tick(remaining, false);
+          if (remaining > 0) return this.startTimer(remaining, false);
         }
       }
     }
     this.balance += this.getMoneyFor(this.delay / 1000);
-    this.tick();
+    if (this.automated) this.startTimer();
   }
 
   /**
    * Get the time remaining for the current cycle of the structure
-   * @returns {Number} Time remaining
+   * @returns {?Number} Time remaining or null if not running
    */
   get timeRemaining() {
-    return this.delay - Math.round(performance.now() - this.start);
+    const remaining = this.delay - Math.round(performance.now() - this.start) || null;
+    if (remaining >= 0) return remaining;
+    else return null;
   }
 
   /**
@@ -159,7 +178,7 @@ class Structure {
    */
   setDelay(delay) {
     this.delay = delay;
-    this.interruptable.cancel();
+    if (this.interruptable) this.interruptable.cancel();
   }
 
   /**

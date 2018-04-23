@@ -1,7 +1,11 @@
 const Structure = require('./Structure.js');
+const Options = require('../utils/Constants.js').DefaultClientOptions;
 
 class Client {
 
+  /**
+   * @param {ClientOptions} [options] Options for the client
+   */
   constructor(options = {}) {
 
     /**
@@ -14,19 +18,19 @@ class Client {
      * The currency for the game
      * @type {String}
      */
-    this.currency = options.currency || '$';
+    this.currency = options.currency || Options.currency;
 
     /**
      * The prestige level for the game
      * @type {Number}
      */
-    this.prestigeLevel = options.prestigeLevel || 0;
+    this.prestigeLevel = options.prestigeLevel || Options.prestigeLevel;
 
     /**
      * Formula for how much you earn more per prestige
      * @type {Function}
      */
-    this.prestigeBoost = options.prestigeBoost || (x => 1);
+    this.prestigeBoost = options.prestigeBoost || Options.prestigeBoost;
 
   }
 
@@ -43,6 +47,7 @@ class Client {
 
   /**
    * Collects the money stored in all structures
+   * This already includes prestige boost
    * @returns {Number} Money
    */
   collectAll() {
@@ -50,11 +55,13 @@ class Client {
     for (const structure of this.structures) {
       balance += structure.collect();
     }
+    if (this.prestige) balance *= this.prestigeBoost(this.prestigeLevel);
     return balance;
   }
 
   /**
    * Gets the amount of money the user should get per second
+   * This already includes prestige boost
    * @returns {Number} The money the person should get per second
    */
   get MPS() {
