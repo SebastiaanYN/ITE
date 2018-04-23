@@ -34,6 +34,5 @@ class Interruptable {
       }, duration);
     });
   }
-
 }
 module.exports = Interruptable;
